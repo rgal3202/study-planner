@@ -1,0 +1,964 @@
+openapi: 3.0.0
+info:
+  title: Study Planner API
+  description: API for managing courses, assignments, and study sessions
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@studyplanner.com
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://study-planner-api.onrender.com
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "john123"
+        email:
+          type: string
+          example: "john@example.com"
+        role:
+          type: string
+          example: "user"
+    Course:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Application Dev"
+        code:
+          type: string
+          example: "ITIS 4166"
+        semester:
+          type: string
+          example: "Spring 2026"
+        instructor:
+          type: string
+          example: "Dr. Lijuan"
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        course_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Reading Overview"
+        description:
+          type: string
+          example: "Analyze Chapter 10"
+        due_date:
+          type: string
+          format: date-time
+          example: "2026-04-05T23:59:00Z"
+        status:
+          type: string
+          example: "Not Started"
+        priority:
+          type: string
+          example: "High"
+    StudySession:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        course_id:
+          type: integer
+          example: 1
+        session_date:
+          type: string
+          format: date-time
+          example: "2026-01-01T00:00:00Z"
+        duration_minutes:
+          type: integer
+          example: 90
+        topic:
+          type: string
+          example: "Reading 1"
+        notes:
+          type: string
+          example: "Review Chapter 32"
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "Error message"
+
+paths:
+  /api/auth/signup:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - email
+                - password
+              properties:
+                username:
+                  type: string
+                  example: "john123"
+                email:
+                  type: string
+                  example: "john@example.com"
+                password:
+                  type: string
+                  example: "Password123!"
+      responses:
+        201:
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User account created successfully"
+                  user:
+                    $ref: "#/components/schemas/User"
+        400:
+          description: Bad Request - missing required fields or invalid email format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        409:
+          description: Conflict - email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/login:
+    post:
+      summary: Login and get JWT token
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  example: "john@example.com"
+                password:
+                  type: string
+                  example: "Password123!"
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Login successful"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  user:
+                    $ref: "#/components/schemas/User"
+        401:
+          description: Unauthorized - missing email/password or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - user account does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/courses:
+    post:
+      summary: Create a new course
+      tags:
+        - Courses
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - code
+                - semester
+                - instructor
+              properties:
+                title:
+                  type: string
+                  example: "English"
+                code:
+                  type: string
+                  example: "ENG 3242"
+                semester:
+                  type: string
+                  example: "Spring 2026"
+                instructor:
+                  type: string
+                  example: "Dr. Smith"
+      responses:
+        201:
+          description: Course created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        400:
+          description: Bad Request - missing required fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      summary: Get all courses for the authenticated user
+      tags:
+        - Courses
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of courses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Course"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/courses/{id}:
+    get:
+      summary: Get a course by ID
+      tags:
+        - Courses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: Course details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        400:
+          description: Bad Request - ID is not a positive integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - course does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Update a course
+      tags:
+        - Courses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - title
+                - code
+                - semester
+                - instructor
+              properties:
+                title:
+                  type: string
+                  example: "English"
+                code:
+                  type: string
+                  example: "ENG 3422"
+                semester:
+                  type: string
+                  example: "Spring 2026"
+                instructor:
+                  type: string
+                  example: "Dr. Smith"
+      responses:
+        200:
+          description: Course updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Course"
+        400:
+          description: Bad Request - invalid ID or request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - course does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Delete a course
+      tags:
+        - Courses
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: Course deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  message:
+                    type: string
+        400:
+          description: Bad Request - ID is not valid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this course
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - course does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/assignments:
+    post:
+      summary: Create a new assignment
+      tags:
+        - Assignments
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+                - title
+                - dueDate
+                - status
+                - priority
+              properties:
+                courseId:
+                  type: integer
+                  example: 1
+                title:
+                  type: string
+                  example: "Reading Overview"
+                description:
+                  type: string
+                  example: "Analyze Chapter 10"
+                dueDate:
+                  type: string
+                  format: date-time
+                  example: "2026-04-05T23:59:00Z"
+                status:
+                  type: string
+                  example: "Not Started"
+                priority:
+                  type: string
+                  example: "High"
+      responses:
+        201:
+          description: Assignment created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        400:
+          description: Bad Request - missing required fields or invalid due date
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - course does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - course does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      summary: Get all assignments for the authenticated user
+      tags:
+        - Assignments
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/assignments/{id}:
+    get:
+      summary: Get an assignment by ID
+      tags:
+        - Assignments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: Assignment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        400:
+          description: Bad Request - ID is not a positive integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - assignment does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Update an assignment
+      tags:
+        - Assignments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  example: "Reading Overview"
+                description:
+                  type: string
+                  example: "Analyze Chapter 10"
+                dueDate:
+                  type: string
+                  format: date-time
+                  example: "2026-04-05T23:59:00Z"
+                status:
+                  type: string
+                  example: "In Progress"
+                priority:
+                  type: string
+                  example: "High"
+      responses:
+        200:
+          description: Assignment updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+        400:
+          description: Bad Request - invalid ID or body data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - assignment does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Delete an assignment
+      tags:
+        - Assignments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: Assignment deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  message:
+                    type: string
+        400:
+          description: Bad Request - invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - assignment does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/study-sessions:
+    post:
+      summary: Create a new study session
+      tags:
+        - Study Sessions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - courseId
+                - sessionDate
+                - duration
+                - topic
+              properties:
+                courseId:
+                  type: integer
+                  example: 1
+                sessionDate:
+                  type: string
+                  format: date-time
+                  example: "2026-01-01T00:00:00Z"
+                duration:
+                  type: integer
+                  example: 90
+                topic:
+                  type: string
+                  example: "Reading 1"
+                notes:
+                  type: string
+                  example: "Review Chapter 32"
+      responses:
+        201:
+          description: Study session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudySession"
+        400:
+          description: Bad Request - missing required fields or invalid duration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - course does not belong to the user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - course does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    get:
+      summary: Get all study sessions for the authenticated user
+      tags:
+        - Study Sessions
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: List of study sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StudySession"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/study-sessions/{id}:
+    get:
+      summary: Get a study session by ID
+      tags:
+        - Study Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: Study session details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudySession"
+        400:
+          description: Bad Request - ID is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this study session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - study session does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    put:
+      summary: Update a study session
+      tags:
+        - Study Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sessionDate:
+                  type: string
+                  format: date-time
+                  example: "2026-01-01T00:00:00Z"
+                duration:
+                  type: integer
+                  example: 120
+                topic:
+                  type: string
+                  example: "Reading 2"
+                notes:
+                  type: string
+                  example: "Read Chapters 15-20"
+      responses:
+        200:
+          description: Study session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudySession"
+        400:
+          description: Bad Request - invalid ID or request body
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this study session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - study session does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Delete a study session
+      tags:
+        - Study Sessions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            example: 1
+      responses:
+        200:
+          description: Study session deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  topic:
+                    type: string
+                  message:
+                    type: string
+        400:
+          description: Bad Request - invalid ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        401:
+          description: Unauthorized - user is not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        403:
+          description: Forbidden - user does not own this study session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        404:
+          description: Not Found - study session does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
