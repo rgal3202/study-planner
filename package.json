@@ -1,0 +1,37 @@
+{
+  "name": "final-project-template",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node -r dotenv/config src/server.js",
+    "dev": "node -r dotenv/config --watch src/server.js",
+    "postinstall": "prisma generate",
+    "migrate:deploy": "npx prisma migrate deploy",
+    "seed": "node -r dotenv/config prisma/seed.js",
+    "seed:prod": "node -r dotenv/config prisma/seed.js"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.29.0",
+    "eslint": "^9.29.0",
+    "eslint-config-prettier": "^10.1.5",
+    "globals": "^16.2.0",
+    "prettier": "^3.6.1",
+    "prisma": "^7.7.0"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.7.0",
+    "bcrypt": "^6.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0"
+  }
+}
